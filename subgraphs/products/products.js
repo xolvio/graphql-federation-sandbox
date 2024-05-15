@@ -40,10 +40,12 @@ const userByProduct = [
 const typeDefs = gql(readFileSync('./products.graphql', { encoding: 'utf-8' }));
 const resolvers = {
     Query: {
-        allProducts: (_, args, context) => {
+        allProducts: async (_, args, context) => {
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return products;
         },
-        product: (_, args, context) => {
+        product: async (_, args, context) => {
+            await new Promise(resolve => setTimeout(resolve, 500));
             return products.find(p => p.id == args.id);
         }
     },
@@ -65,6 +67,14 @@ const resolvers = {
         dimensions: () => {
             return { size: "1", weight: 1 }
         },
+        discount(product, args, context) {
+            const reviewsCount = product.reviewsCount;
+            console.log("product", product);
+            if (reviewsCount === undefined) {
+                throw new Error("reviewsCount is not provided");
+            }
+            return reviewsCount * 0.1;
+        },
         createdBy: (reference) => {
             if (reference.id) {
                 return userByProduct.find(p => p.id == reference.id).user;
@@ -75,23 +85,24 @@ const resolvers = {
             return 4.5;
         },
         __resolveReference: (reference) => {
-            if (reference.id) return products.find(p => p.id == reference.id);
-            else if (reference.sku && reference.package) return products.find(p => p.sku == reference.sku && p.package == reference.package);
+            let product = {};
+            console.log("__resolveReference reference:", reference);
+            if (reference.id) {
+                product = products.find(p => p.id == reference.id);
+            }
+            else if (reference.sku && reference.package) {
+                product = products.find(p => p.sku == reference.sku && p.package == reference.package);
+            }
             else return { id: 'rover', package: '@apollo/rover', ...reference };
+
+            return {
+                ...reference,
+                ...product,
+            }
         }
     }
 }
 const schema = buildSubgraphSchema({ typeDefs, resolvers });
-
-// console.log(`---------------------------------------`);
-// console.log(`🚀  subgraph-js::printSubgraphSchema 🚀`);
-// console.log(`---------------------------------------`);
-// console.log(printSubgraphSchema(schema));
-// 
-// console.log(`---------------------------------------`);
-// console.log(`🚀  graphql::printSchema 🚀`);
-// console.log(`---------------------------------------`);
-// console.log(printSchema(schema));
 
 const server = new ApolloServer({ schema: schema });
 server.listen( {port: port} ).then(({ url }) => {

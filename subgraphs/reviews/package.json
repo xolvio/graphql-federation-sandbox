@@ -1,13 +1,16 @@
 {
-  "name": "subgraph-pandas",
+  "name": "subgraph-reviews",
   "version": "1.1.27",
   "description": "",
-  "main": "pandas.js",
+  "main": "",
   "scripts": {
-    "start": "node pandas.js"
+    "start": "node "
   },
   "dependencies": {
+    "@apollo/subgraph": "^2.7.7",
     "apollo-server": "3.13.0",
+    "apollo-server-express": "^3.13.0",
+    "express": "^4.19.2",
     "graphql": "16.8.1"
   },
   "keywords": [],

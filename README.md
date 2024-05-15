@@ -83,6 +83,8 @@ You'll need:
 * [docker-compose](https://docs.docker.com/compose/install/) - runs subgraphs locally
 * [rover](https://www.apollographql.com/docs/rover/getting-started) - publishes subgraph schemas to your supergraph in the registry
 * [router](https://www.apollographql.com/docs/router/quickstart) - pulls supergraph schemas from the registry
+* redis instance running on `localhost:6379` - used for entity caching PoC
+* Enterprise Apollo Studio account (trial works) to access entity caching PoC
 
 Install `rover` and `router`:
 
@@ -165,7 +167,6 @@ products    | 🚀 Products subgraph ready
 users       | 🚀 Users subgraph ready
 inventory   | Completed initialization in 712 ms
 reviews     | INFO:     Application startup complete.
-pandas      | 🚀 Pandas subgraph ready
 ```
 
 Browse the products subgraph on port 4001: http://localhost:4001/

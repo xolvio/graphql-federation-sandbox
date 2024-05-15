@@ -15,11 +15,32 @@ telemetry:
       sampler: 1 # The percentage of requests that will generate traces (a rate or `always_on` or `always_off`)
       service_name: "router"
       service_namespace: "apollo"
-    otlp:
-      endpoint: http://${env.APOLLO_OTEL_EXPORTER_HOST:-localhost}:4317
-      protocol: grpc
-      batch_processor:
-        max_export_timeout: 42s
+#    otlp:
+#      endpoint: http://${env.APOLLO_OTEL_EXPORTER_HOST:-localhost}:4317
+#      protocol: grpc
+#      batch_processor:
+#        max_export_timeout: 42s
+
+preview_entity_cache:
+  enabled: true
+
+  # Configure Redis
+  redis:
+    urls: ["redis://127.0.0.1:6379"]
+    timeout: 500ms # Optional, by default: 2ms
+    ttl: 24h # Optional, by default no expiration
+
+  # Configure entity caching per subgraph
+  subgraphs:
+    products:
+      enabled: true
+    inventory:
+      enabled: false # disable for a specific subgraph
+    users:
+      enabled: true
+
+rhai:
+  main: main.rhai
 
 # --------------------
 # note: `router --dev` has these default settings and enables the --hot-reload flag

@@ -160,40 +160,6 @@ read -r -d '' EXP_3 <<"EOF"
 EOF
 
 # --------------------------------------------------------------------
-# TEST 4
-# --------------------------------------------------------------------
-DESCR_4="exampleQuery with pandas"
-OPNAME_4="exampleQuery"
-ISSLOW_4="true"
-ACCEPT_4="application/json"
-read -r -d '' QUERY_4 <<"EOF"
-query exampleQuery {
- allProducts {
-   id,
-   sku,
-   dimensions {
-     size,
-     weight
-   }
-   delivery {
-     estimatedDelivery,
-     fastestDelivery
-   }
- }
- allPandas {
-   name,
-   favoriteFood
- }
-}
-EOF
-
-OP_4=equals
-
-read -r -d '' EXP_4 <<"EOF"
-{"data":{"allProducts":[{"id":"converse-1","sku":"converse-1","dimensions":{"size":"1","weight":1},"delivery":{"estimatedDelivery":"6/25/2023","fastestDelivery":"6/24/2023"}},{"id":"vans-1","sku":"vans-1","dimensions":{"size":"1","weight":1},"delivery":{"estimatedDelivery":"6/25/2023","fastestDelivery":"6/24/2023"}}],"allPandas":[{"name":"Basi","favoriteFood":"bamboo leaves"},{"name":"Yun","favoriteFood":"apple"}]}}
-EOF
-
-# --------------------------------------------------------------------
 # TEST 5
 # --------------------------------------------------------------------
 DESCR_5="exampleQuery with reviews and override"

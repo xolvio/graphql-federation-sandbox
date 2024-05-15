@@ -35,13 +35,8 @@ services:
     build: ./subgraphs/users
     ports:
       - "4003:4000"
-  pandas:
-    container_name: pandas
-    build: ./subgraphs/pandas
-    ports:
-      - "4004:4000"
   reviews:
     container_name: reviews
-    build: ./subgraphs/reviews
+    build: subgraphs/reviews
     ports:
-      - "4005:4000"
+      - "4004:4000"

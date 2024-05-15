@@ -13,7 +13,8 @@ if (process.env.APOLLO_OTEL_EXPORTER_TYPE) {
   }).setupInstrumentation();
 }
 
-const { ApolloServer, gql } = require('apollo-server');
+const { ApolloServer, gql } = require('apollo-server-express');
+const express = require('express');
 const { buildSubgraphSchema } = require('@apollo/subgraph');
 const { readFileSync } = require('fs');
 
@@ -27,12 +28,38 @@ const users = [
 const typeDefs = gql(readFileSync('./users.graphql', { encoding: 'utf-8' }));
 const resolvers = {
     User: {
-        __resolveReference: (reference) => {
+        __resolveReference: async (reference) => {
+            await new Promise(resolve => setTimeout(resolve, 3000));
             return users.find(u => u.email == reference.email);
         }
     }
 }
-const server = new ApolloServer({ schema: buildSubgraphSchema({ typeDefs, resolvers }) });
-server.listen( {port: port} ).then(({ url }) => {
-  console.log(`🚀 Users subgraph ready at ${url}`);
-}).catch(err => {console.error(err)});
+
+const app = express();
+
+async function startApolloServer() {
+    const server = new ApolloServer({
+        schema: buildSubgraphSchema({ typeDefs, resolvers }),
+        context: async ({ req, res }) => {
+            res.setHeader('Cache-Control', 'max-age=600');
+            // Ensure the header is being set
+            console.log('Header set');
+            return { req, res };
+        }
+    });
+    await server.start(); // Start the Apollo server before applying middleware
+    server.applyMiddleware({ app }); // Connect Apollo Server with Express application
+
+    app.listen(port, () => {
+        console.log(`🚀 Users subgraph ready at http://localhost:${port}${server.graphqlPath}`);
+    });
+}
+
+startApolloServer().catch(err => {
+    console.error(err);
+});
+
+// const server = new ApolloServer({ schema: buildSubgraphSchema({ typeDefs, resolvers }) });
+// server.listen( {port: port} ).then(({ url }) => {
+//   console.log(`🚀 Users subgraph ready at ${url}`);
+// }).catch(err => {console.error(err)});

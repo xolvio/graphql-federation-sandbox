@@ -1,16 +1,12 @@
-FROM python:3.11
+FROM node:18-bookworm-slim
 
-# install PDM
-RUN pip install -U pip setuptools wheel
-RUN pip install pdm
+WORKDIR /usr/src/app
 
-# copy files
-COPY pyproject.toml pdm.lock /project/
-COPY . /project
+COPY package.json .
 
-WORKDIR /project
-RUN pdm install --prod --no-lock --no-editable
+RUN npm install
 
-STOPSIGNAL SIGINT
+COPY reviews.js .
+COPY reviews.graphql .
 
-CMD ["pdm", "run", "server"]
+CMD [ "node", "reviews.js" ]

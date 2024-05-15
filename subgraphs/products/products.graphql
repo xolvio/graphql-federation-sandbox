@@ -1,6 +1,6 @@
 extend schema
     @link(url: "https://specs.apollo.dev/federation/v2.1",
-       import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective"])
+       import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective", "@requires", "@external"])
     @link(url: "https://myspecs.dev/myDirective/v1.0", import: ["@myDirective", { name: "@anotherDirective", as: "@hello" }])
     @composeDirective(name: "@myDirective")
     @composeDirective(name: "@hello")
@@ -24,6 +24,8 @@ interface ProductItf implements SkuItf {
   createdBy: User
   hidden: String @inaccessible
   oldField: String @deprecated(reason: "refactored out")
+#  reviewsCount: Int!
+#  discount: Float
 }
 
 interface SkuItf {
@@ -37,10 +39,12 @@ type Product implements ProductItf & SkuItf @key(fields: "id") @key(fields: "sku
   package: String
   variation: ProductVariation
   dimensions: ProductDimension
-  createdBy: User
+  createdBy: User @external
   hidden: String
   reviewsScore: Float!
   oldField: String
+  reviewsCount: Int! @external
+  discount: Float @requires(fields: "reviewsCount createdBy { email }")
 }
 enum ShippingClass {
   STANDARD
