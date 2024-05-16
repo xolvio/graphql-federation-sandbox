@@ -16,3 +16,11 @@ subgraphs:
     routing_url: http://reviews:4000/graphql
     schema:
       file: ../../subgraphs/reviews/reviews.graphql
+  accounts:
+    routing_url: http://localhost:4005/graphql
+    schema:
+      file: ../../subgraphs/accounts/accounts.graphql
+  bill-history:
+    routing_url: http://localhost:4006/graphql
+    schema:
+      file: ../../subgraphs/bill-history/bill-history.graphql

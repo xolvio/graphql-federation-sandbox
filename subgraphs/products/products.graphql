@@ -39,12 +39,12 @@ type Product implements ProductItf & SkuItf @key(fields: "id") @key(fields: "sku
   package: String
   variation: ProductVariation
   dimensions: ProductDimension
-  createdBy: User @external
+  createdBy: User
   hidden: String
   reviewsScore: Float!
   oldField: String
   reviewsCount: Int! @external
-  discount: Float @requires(fields: "reviewsCount createdBy { email }")
+  discount: Float @requires(fields: "reviewsCount")
 }
 enum ShippingClass {
   STANDARD

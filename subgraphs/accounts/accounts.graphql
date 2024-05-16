@@ -1,0 +1,31 @@
+extend schema
+@link(url: "https://specs.apollo.dev/federation/v2.1",
+  import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective", "@requires", "@external"])
+
+type Query {
+  accounts: [Account]
+  account(billingAccountNumber: String!): Account
+}
+
+type Account @key(fields: "billingAccountNumber") {
+  id: ID!
+  billingAccountNumber: String!
+  name: String
+  email: String
+  settings: AccountSettings
+  amountDue: Float
+  balance: Float
+}
+
+type AccountSettings @shareable {
+  paperless: Boolean
+}
+
+interface BillDetail {
+  id: ID!
+}
+
+type CurrentBillDetail implements BillDetail @key(fields: "id") {
+  id: ID!
+  account: Account
+}

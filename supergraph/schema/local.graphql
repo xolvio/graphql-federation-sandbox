@@ -32,6 +32,60 @@ directive @myDirective(a: String!) on FIELD_DEFINITION
 
 directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION | SCHEMA
 
+type Account
+  @join__type(graph: ACCOUNTS, key: "billingAccountNumber")
+  @join__type(graph: BILL_HISTORY, key: "billingAccountNumber")
+{
+  id: ID! @join__field(graph: ACCOUNTS)
+  billingAccountNumber: String!
+  name: String @join__field(graph: ACCOUNTS)
+  email: String @join__field(graph: ACCOUNTS)
+  settings: AccountSettings @join__field(graph: ACCOUNTS) @join__field(graph: BILL_HISTORY, external: true)
+  amountDue: Float @join__field(graph: ACCOUNTS)
+  balance: Float @join__field(graph: ACCOUNTS)
+}
+
+type AccountSettings
+  @join__type(graph: ACCOUNTS)
+  @join__type(graph: BILL_HISTORY)
+{
+  paperless: Boolean
+}
+
+interface BillDetail
+  @join__type(graph: ACCOUNTS)
+  @join__type(graph: BILL_HISTORY)
+{
+  id: ID!
+  isCurrent: Boolean! @join__field(graph: BILL_HISTORY)
+  hints: [BillDetailHint] @join__field(graph: BILL_HISTORY)
+}
+
+type BillDetailHint
+  @join__type(graph: BILL_HISTORY)
+{
+  id: ID!
+  body: String
+}
+
+union BillDetailResponse
+  @join__type(graph: BILL_HISTORY)
+  @join__unionMember(graph: BILL_HISTORY, member: "CurrentBillDetail")
+  @join__unionMember(graph: BILL_HISTORY, member: "PastBillDetail")
+ = CurrentBillDetail | PastBillDetail
+
+type CurrentBillDetail implements BillDetail
+  @join__implements(graph: ACCOUNTS, interface: "BillDetail")
+  @join__implements(graph: BILL_HISTORY, interface: "BillDetail")
+  @join__type(graph: ACCOUNTS, key: "id")
+  @join__type(graph: BILL_HISTORY, key: "id")
+{
+  id: ID!
+  account: Account @join__field(graph: ACCOUNTS) @join__field(graph: BILL_HISTORY, external: true)
+  isCurrent: Boolean! @join__field(graph: BILL_HISTORY)
+  hints: [BillDetailHint] @join__field(graph: BILL_HISTORY, requires: "account { settings { paperless } }")
+}
+
 type DeliveryEstimates
   @join__type(graph: INVENTORY)
 {
@@ -44,6 +98,8 @@ scalar join__DirectiveArguments
 scalar join__FieldSet
 
 enum join__Graph {
+  ACCOUNTS @join__graph(name: "accounts", url: "http://localhost:4005/graphql")
+  BILL_HISTORY @join__graph(name: "bill-history", url: "http://localhost:4006/graphql")
   INVENTORY @join__graph(name: "inventory", url: "http://localhost:4002/graphql")
   PRODUCTS @join__graph(name: "products", url: "http://localhost:4001/graphql")
   REVIEWS @join__graph(name: "reviews", url: "http://localhost:4004/graphql")
@@ -62,6 +118,15 @@ enum link__Purpose {
   `EXECUTION` features provide metadata necessary for operation execution.
   """
   EXECUTION
+}
+
+type PastBillDetail implements BillDetail
+  @join__implements(graph: BILL_HISTORY, interface: "BillDetail")
+  @join__type(graph: BILL_HISTORY)
+{
+  id: ID!
+  isCurrent: Boolean!
+  hints: [BillDetailHint]
 }
 
 type Product implements ProductItf & SkuItf
@@ -128,11 +193,16 @@ type ProductVariation
 }
 
 type Query
+  @join__type(graph: ACCOUNTS)
+  @join__type(graph: BILL_HISTORY)
   @join__type(graph: INVENTORY)
   @join__type(graph: PRODUCTS)
   @join__type(graph: REVIEWS)
   @join__type(graph: USERS)
 {
+  accounts: [Account] @join__field(graph: ACCOUNTS)
+  account(billingAccountNumber: String!): Account @join__field(graph: ACCOUNTS)
+  bills: [BillDetailResponse] @join__field(graph: BILL_HISTORY)
   allProducts: [ProductItf] @join__field(graph: PRODUCTS)
   product(id: ID!): ProductItf @join__field(graph: PRODUCTS)
   review(id: Int!): Review @join__field(graph: REVIEWS)
