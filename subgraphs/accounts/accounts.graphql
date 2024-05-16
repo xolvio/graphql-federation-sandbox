@@ -7,7 +7,7 @@ type Query {
   account(billingAccountNumber: String!): Account
 }
 
-type Account @key(fields: "billingAccountNumber") {
+type Account {
   id: ID!
   billingAccountNumber: String!
   name: String
@@ -22,10 +22,10 @@ type AccountSettings @shareable {
 }
 
 interface BillDetail {
-  id: ID!
+  billingAccountNumber: String!
 }
 
-type CurrentBillDetail implements BillDetail @key(fields: "id") {
-  id: ID!
+type CurrentBillDetail implements BillDetail @key(fields: "billingAccountNumber") {
+  billingAccountNumber: String!
   account: Account
 }

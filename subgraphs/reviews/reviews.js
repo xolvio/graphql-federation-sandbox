@@ -16,23 +16,19 @@ const typeDefs = gql(readFileSync('./reviews.graphql', { encoding: 'utf-8' }));
 const resolvers = {
     Query: {
         review: (_, args, context) => {
-            console.info('19 _ michal: ', _);
             return reviews.find(r => r.id == args.id);
         },
     },
     Review: {
         __resolveReference: (review) => {
-            console.info('25 review michal: ', review);
             return reviews.find(r => r.id === review.id);
         }
     },
     Product: {
         reviews: (product) => {
-            console.info('31 product michal: ', product);
             return reviews.filter(r => r.product_id === product.id);
         },
         reviewsCount: (product) => {
-            console.info('32 product michal: ', product);
             return reviews.filter(r => r.product_id === product.id).length;
         },
         reviewsScore: (product) => 4.6, // Static example score

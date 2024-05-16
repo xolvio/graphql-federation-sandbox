@@ -13,9 +13,11 @@ const staticHints = [
 ];
 
 const billHistory = [
-    { id: '1', billingAccountNumber: '123', isCurrent: true, hints: [] },
-    // { id: '2', billingAccountNumber: '123', isCurrent: false, account: { paperless: true }, hints: staticHints },
-    // { id: '3', billingAccountNumber: '123', isCurrent: false, account: { paperless: false }, hints: staticHints },
+    { id: '1', billingAccountNumber: '123', accountId: '1', isCurrent: true, hints: [] },
+    { id: '2', billingAccountNumber: '123', isCurrent: false, account: { paperless: true }, hints: staticHints },
+    { id: '3', billingAccountNumber: '123', isCurrent: false, account: { paperless: false }, hints: staticHints },
+    { id: '4', billingAccountNumber: '456', isCurrent: false, account: { paperless: true }, hints: staticHints },
+    { id: '5', billingAccountNumber: '789', isCurrent: false, account: { paperless: false }, hints: staticHints },
 ];
 
 // GraphQL
@@ -23,53 +25,32 @@ const typeDefs = gql(readFileSync('./bill-history.graphql', { encoding: 'utf-8' 
 const resolvers = {
     Query: {
         bills: async (_, args, context) => {
-            console.info('26 _ michal: ', _);
             return billHistory;
         },
     },
     BillDetailResponse: {
         __resolveType(obj) {
-            console.info('32 BillDetailResponse __resolveType obj michal: ', obj);
             if (obj.isCurrent) {
                 return 'CurrentBillDetail';
             } else {
                 return 'PastBillDetail';
             }
-        },
-        __resolveReference: (reference) => {
-            let result = {};
-            console.info('41 BillDetailResponse __resolveReference reference michal: ', reference);
-            if (reference.id) {
-                result = billHistory.find(bh => bh.id == reference.id);
-            } else return { id: 'rover', package: '@apollo/rover', ...reference };
-
-            return {
-                ...reference,
-                ...result,
-            };
-        },
+        }
     },
     CurrentBillDetail: {
-        isTypeOf(obj, context, info) {
-            console.info('40 CurrentBillDetail isTypeof michal: ', obj.isCurrent === false, obj);
-            return obj.isCurrent === true;
-        },
-        isCurrent: (obj, args, context) => {
-            return obj.isCurrent;
-        },
         hints: (obj, args, context) => {
-            console.info('47 CurrentBillDetail obj michal: ', obj);
-            return obj.hints;
+            if (obj.account?.settings?.paperless) {
+                return [
+                    staticHints[0],
+                    staticHints[2],
+                ]
+            }
+            return null;
         },
-        // account: (obj, args, context, info) => {
-        //     console.info('53 CurrentBillDetail account obj michal: ', obj);
-        //     return { __typename: 'Account', billingAccountNumber: obj.account.billingAccountNumber };
-        // },
         __resolveReference: (reference) => {
             let result = {};
-            console.info('52 CurrentBillDetail __resolveReference reference michal: ', reference);
-            if (reference.id) {
-                result = billHistory.find(bh => bh.id == reference.id);
+            if (reference.billingAccountNumber) {
+                result = billHistory.find(bh => bh.billingAccountNumber === reference.billingAccountNumber);
             } else return { id: 'rover', package: '@apollo/rover', ...reference };
 
             return {
@@ -78,31 +59,6 @@ const resolvers = {
             };
         },
     },
-    PastBillDetail: {
-        isTypeOf(obj, context, info) {
-            console.info('62 PastBillDetail isTypeof michal: ', obj.isCurrent === false, obj);
-            return obj.isCurrent === false;
-        },
-        hints: (obj, args, context) => {
-            return obj.hints;
-        },
-    },
-    BillDetailHint: {
-        id: (obj) => {
-            console.info('70 BillDetailHints obj michal: ', obj);
-            return obj.id;
-        },
-        body: (obj) => {
-            return obj.body;
-        },
-    },
-    Account: {
-        settings: obj => {
-            console.info('82 Account settings obj michal: ', obj);
-            return obj.settings;
-        }
-
-    }
 };
 
 const schema = buildSubgraphSchema({ typeDefs, resolvers });

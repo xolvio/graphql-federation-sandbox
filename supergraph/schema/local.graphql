@@ -33,11 +33,11 @@ directive @myDirective(a: String!) on FIELD_DEFINITION
 directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION | SCHEMA
 
 type Account
-  @join__type(graph: ACCOUNTS, key: "billingAccountNumber")
-  @join__type(graph: BILL_HISTORY, key: "billingAccountNumber")
+  @join__type(graph: ACCOUNTS)
+  @join__type(graph: BILL_HISTORY)
 {
   id: ID! @join__field(graph: ACCOUNTS)
-  billingAccountNumber: String!
+  billingAccountNumber: String! @join__field(graph: ACCOUNTS)
   name: String @join__field(graph: ACCOUNTS)
   email: String @join__field(graph: ACCOUNTS)
   settings: AccountSettings @join__field(graph: ACCOUNTS) @join__field(graph: BILL_HISTORY, external: true)
@@ -56,7 +56,8 @@ interface BillDetail
   @join__type(graph: ACCOUNTS)
   @join__type(graph: BILL_HISTORY)
 {
-  id: ID!
+  billingAccountNumber: String!
+  id: ID! @join__field(graph: BILL_HISTORY)
   isCurrent: Boolean! @join__field(graph: BILL_HISTORY)
   hints: [BillDetailHint] @join__field(graph: BILL_HISTORY)
 }
@@ -77,11 +78,12 @@ union BillDetailResponse
 type CurrentBillDetail implements BillDetail
   @join__implements(graph: ACCOUNTS, interface: "BillDetail")
   @join__implements(graph: BILL_HISTORY, interface: "BillDetail")
-  @join__type(graph: ACCOUNTS, key: "id")
-  @join__type(graph: BILL_HISTORY, key: "id")
+  @join__type(graph: ACCOUNTS, key: "billingAccountNumber")
+  @join__type(graph: BILL_HISTORY, key: "billingAccountNumber")
 {
-  id: ID!
+  billingAccountNumber: String!
   account: Account @join__field(graph: ACCOUNTS) @join__field(graph: BILL_HISTORY, external: true)
+  id: ID! @join__field(graph: BILL_HISTORY)
   isCurrent: Boolean! @join__field(graph: BILL_HISTORY)
   hints: [BillDetailHint] @join__field(graph: BILL_HISTORY, requires: "account { settings { paperless } }")
 }
@@ -126,6 +128,7 @@ type PastBillDetail implements BillDetail
 {
   id: ID!
   isCurrent: Boolean!
+  billingAccountNumber: String!
   hints: [BillDetailHint]
 }
 

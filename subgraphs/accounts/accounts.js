@@ -56,21 +56,28 @@ const typeDefs = gql(readFileSync('./accounts.graphql', {encoding: 'utf-8'}));
 const resolvers = {
     Query: {
         accounts: (_, args, context) => {
-            console.info('59 _ michal: ', _);
             return accounts;
         },
         account: (_, args, context) => {
-            console.info('63 _ michal: ', _);
             return accounts.find(account => account.billingAccountNumber === args.billingAccountNumber);
+        }
+    },
+    CurrentBillDetail: {
+        __resolveReference: (reference) => {
+            return {
+                ...reference,
+                ...accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
+            };
+        },
+        account: (account) => {
+            return accounts.find(acc => acc.billingAccountNumber === account.billingAccountNumber);
         }
     },
     Account: {
         account: (account) => {
-            console.log('Account account', account);
             return account[0];
         },
         __resolveReference: reference => {
-            console.info('72 Account __resolveReference reference michal: ', reference);
             return accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
         }
     }

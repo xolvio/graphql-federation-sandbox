@@ -8,12 +8,14 @@ type Query {
 
 interface BillDetail {
   id: ID!
+  billingAccountNumber: String!
   isCurrent: Boolean!
   hints: [BillDetailHint]
 }
 
-type CurrentBillDetail implements BillDetail @key(fields: "id") {
+type CurrentBillDetail implements BillDetail @key(fields: "billingAccountNumber") {
   id: ID!
+  billingAccountNumber: String!
   isCurrent: Boolean!
   account: Account @external
   hints: [BillDetailHint] @requires(fields: "account { settings { paperless } }")
@@ -22,6 +24,7 @@ type CurrentBillDetail implements BillDetail @key(fields: "id") {
 type PastBillDetail implements BillDetail {
   id: ID!
   isCurrent: Boolean!
+  billingAccountNumber: String!
   hints: [BillDetailHint]
 }
 
@@ -32,8 +35,7 @@ type BillDetailHint {
   body: String
 }
 
-type Account @key(fields: "billingAccountNumber") {
-  billingAccountNumber: String!
+type Account {
   settings: AccountSettings @external
 }
 
