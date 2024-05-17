@@ -25,10 +25,10 @@ const resolvers = {
         }
     },
     Product: {
-        reviews: (product) => reviews.filter(r => r.product_id === product.id),
+        reviews: (product) => {
+            return reviews.filter(r => r.product_id === product.id);
+        },
         reviewsCount: (product) => {
-            console.log("product: ", product);
-            console.log("product reviewsCount: ", reviews.filter(r => r.product_id === product.id).length, product);
             return reviews.filter(r => r.product_id === product.id).length;
         },
         reviewsScore: (product) => 4.6, // Static example score

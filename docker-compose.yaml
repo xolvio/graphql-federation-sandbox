@@ -40,3 +40,13 @@ services:
     build: subgraphs/reviews
     ports:
       - "4004:4000"
+  accounts:
+    container_name: accounts
+    build: subgraphs/accounts
+    ports:
+      - "4005:4000"
+  bill-history:
+    container_name: bill-history
+    build: subgraphs/bill-history
+    ports:
+      - "4006:4000"
