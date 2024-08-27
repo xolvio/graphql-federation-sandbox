@@ -23,31 +23,25 @@ const port = process.env.APOLLO_PORT || 4000;
 // Data sources
 const accounts = [
     {
-        id: '1',
-        billingAccountNumber: '123',
-        name: 'Alice',
-        email: 'alice@gmail.com',
-        amountDue: 100.0,
-        balance: 100.0,
-        settings: {paperless: true}
+        billingAccountNumber: "123",
+        phoneNumber: "123",
+        role: "AM",
+        userRole: "PAH",
+        systemRole: "FULL"
     },
     {
-        id: '2',
-        billingAccountNumber: '456',
-        name: 'Bob',
-        email: 'bob@yahoo.com',
-        amountDue: 200.0,
-        balance: 50.0,
-        settings: {paperless: false}
+        billingAccountNumber: "12343",
+        phoneNumber: "234",
+        role: "AM",
+        userRole: "PAH",
+        systemRole: "FULL"
     },
     {
-        id: '3',
-        billingAccountNumber: '789',
-        name: 'Charlie',
-        email: 'charlie123@gmail.com',
-        amountDue: 300.0,
-        balance: 500.0,
-        settings: {paperless: true}
+        billingAccountNumber: "345",
+        phoneNumber: "345",
+        role: "AM",
+        userRole: "PAH",
+        systemRole: "FULL"
     },
 ];
 
@@ -60,17 +54,6 @@ const resolvers = {
         },
         account: (_, args, context) => {
             return accounts.find(account => account.billingAccountNumber === args.billingAccountNumber);
-        }
-    },
-    CurrentBillDetail: {
-        __resolveReference: (reference) => {
-            return {
-                ...reference,
-                ...accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
-            };
-        },
-        account: (account) => {
-            return accounts.find(acc => acc.billingAccountNumber === account.billingAccountNumber);
         }
     },
     Account: {

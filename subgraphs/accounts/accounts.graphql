@@ -7,14 +7,30 @@ type Query {
   account(billingAccountNumber: String!): Account
 }
 
-type Account {
-  id: ID!
-  billingAccountNumber: String!
-  name: String
-  email: String
-  settings: AccountSettings
-  amountDue: Float
-  balance: Float
+type Account @key(fields: "billingAccountNumber") {
+  """billingAccountNumber or ban or accountNumber"""
+  billingAccountNumber: ID! @shareable
+
+  """phoneNumber """
+  phoneNumber: ID!
+  """
+  Uprising Role Assigned at Subscriber/Line Level -
+  Ex: AO, AM.
+  MOCKED
+  """
+  role: String
+  """
+  IAM Role will be provided Subscriber/Line Level
+  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
+  MOCKED
+  """
+  userRole: String
+  """
+  Legacy System role value for Subscriber's associated with Account
+  Ex: PAH, FULL, Standard, Restricted, No Access
+  MOCKED
+  """
+  systemRole: String
 }
 
 type AccountSettings @shareable {

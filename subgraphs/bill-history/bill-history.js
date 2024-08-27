@@ -20,12 +20,21 @@ const billHistory = [
     { id: '5', billingAccountNumber: '789', isCurrent: false, account: { paperless: false }, hints: staticHints },
 ];
 
+const subscribers = [
+    {
+        phoneNumber: "123",
+        firstName: "Loop",
+        lastName: "test",
+        status: "ACTIVE"
+    }
+]
+
 // GraphQL
 const typeDefs = gql(readFileSync('./bill-history.graphql', { encoding: 'utf-8' }));
 const resolvers = {
     Query: {
-        bills: async (_, args, context) => {
-            return billHistory;
+        subscriberByPhoneNumber: async (_, args, context) => {
+            return subscribers.find(sub => args.billingAccountNumber === sub.phoneNumber);
         },
     },
     BillDetailResponse: {

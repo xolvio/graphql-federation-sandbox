@@ -3,42 +3,113 @@ extend schema
   import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective", "@requires", "@external"])
 
 type Query {
-  bills: [BillDetailResponse]
+  subscriberByPhoneNumber(
+    phoneNumber: ID!
+  ): SubscriberResponse
 }
 
-interface BillDetail {
-  id: ID!
-  billingAccountNumber: String!
-  isCurrent: Boolean!
-  hints: [BillDetailHint]
+union SubscriberResponse =  Subscriber | SubscriberError
+
+type Account @key(fields: "billingAccountNumber") @key(fields: "phoneNumber"){
+  """billingAccountNumber or ban or accountNumber"""
+  billingAccountNumber: ID! @shareable
+
+  """phoneNumber """
+  phoneNumber: ID!
+  """
+  Uprising Role Assigned at Subscriber/Line Level -
+  Ex: AO, AM.
+  MOCKED
+  """
+  role: String
+  """
+  IAM Role will be provided Subscriber/Line Level
+  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
+  MOCKED
+  """
+  userRole: String
+  """
+  Legacy System role value for Subscriber's associated with Account
+  Ex: PAH, FULL, Standard, Restricted, No Access
+  MOCKED
+  """
+  systemRole: String
 }
 
-type CurrentBillDetail implements BillDetail @key(fields: "billingAccountNumber") {
-  id: ID!
-  billingAccountNumber: String!
-  isCurrent: Boolean!
-  account: Account @external
-  hints: [BillDetailHint] @requires(fields: "account { settings { paperless } }")
+type Subscriber @key(fields: "phoneNumber") {
+  """Subscriber Phone Number, often refered as MSISDN"""
+  phoneNumber: ID!
+
+  """Account """
+
+    account(phoneNumber: ID): Account @shareable
+
+  """Subscriber is a default line, if the account has multiple subscriber
+    MOCKED to false
+  """
+  defaultLine: Boolean
+  """
+  Uprising Role Assigned at Subscriber/Line Level -
+  Ex: AO, AM.
+  MOCKED
+  """
+  role: String
+  """
+  IAM Role will be provided Subscriber/Line Level
+  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
+  MOCKED
+  """
+  userRole: String
+  """
+  The profile that this user can request or be granted a role
+  """
+  userId: String
+  """
+  Legacy System role value for Subscriber's associated with Account
+  Ex: PAH, FULL, Standard, Restricted, No Access
+  MOCKED
+  """
+  systemRole: String
+  """Full Name flatten (first, middle and last name flatten)"""
+  nickName: String
+  """First name of the individual"""
+  firstName: String!
+  """Family name of the individual. Contains the non-chosen or inherited name. Also known as last name in the Western context"""
+  lastName: String!
+  """ Email Address """
+  emailAddress: String
+  """Status of the Subscriber active/suspended"""
+  status: String!
+  """Date when the product is set to active"""
+  activationDate: String!
+
+  """Subscriber Has a Scam Block on the line, this value will be set to true else false"""
+  scamBlockInd: Boolean
+  """Subscriber has Insurance Soc active"""
+  protection360Enabled: Boolean
+  """
+  Reason code for statusChangeReason
+  Depends on subscriber status.
+  """
+  statusChangeReason: String
+  """Date when the subscriber was suspended."""
+  suspensionDate: String
+  """If any error provide this value"""
+  reasonCode: String
+  """Phone numbers paired to the subscriber's, if any"""
+  pairedPhoneNumbers: [String]
 }
 
-type PastBillDetail implements BillDetail {
-  id: ID!
-  isCurrent: Boolean!
-  billingAccountNumber: String!
-  hints: [BillDetailHint]
+interface Error {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
 }
 
-union BillDetailResponse = CurrentBillDetail | PastBillDetail
-
-type BillDetailHint {
-  id: ID!
-  body: String
-}
-
-type Account {
-  settings: AccountSettings @external
-}
-
-type AccountSettings @shareable {
-  paperless: Boolean
+type SubscriberError implements Error @shareable {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
 }
