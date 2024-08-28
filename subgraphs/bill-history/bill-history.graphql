@@ -10,11 +10,10 @@ type Query {
 
 union SubscriberResponse =  Subscriber | SubscriberError
 
-type Account @key(fields: "billingAccountNumber") @key(fields: "phoneNumber"){
+type Account @shareable @key(fields: "billingAccountNumber") @key(fields: "phoneNumber"){
   """billingAccountNumber or ban or accountNumber"""
-  billingAccountNumber: ID! @shareable
+  billingAccountNumber: ID!
 
-  """phoneNumber """
   phoneNumber: ID!
   """
   Uprising Role Assigned at Subscriber/Line Level -
@@ -42,62 +41,14 @@ type Subscriber @key(fields: "phoneNumber") {
 
   """Account """
 
-    account(phoneNumber: ID): Account @shareable
+    account(phoneNumber: ID): Account
 
-  """Subscriber is a default line, if the account has multiple subscriber
-    MOCKED to false
-  """
-  defaultLine: Boolean
-  """
-  Uprising Role Assigned at Subscriber/Line Level -
-  Ex: AO, AM.
-  MOCKED
-  """
-  role: String
-  """
-  IAM Role will be provided Subscriber/Line Level
-  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
-  MOCKED
-  """
-  userRole: String
-  """
-  The profile that this user can request or be granted a role
-  """
-  userId: String
-  """
-  Legacy System role value for Subscriber's associated with Account
-  Ex: PAH, FULL, Standard, Restricted, No Access
-  MOCKED
-  """
-  systemRole: String
   """Full Name flatten (first, middle and last name flatten)"""
   nickName: String
   """First name of the individual"""
   firstName: String!
   """Family name of the individual. Contains the non-chosen or inherited name. Also known as last name in the Western context"""
   lastName: String!
-  """ Email Address """
-  emailAddress: String
-  """Status of the Subscriber active/suspended"""
-  status: String!
-  """Date when the product is set to active"""
-  activationDate: String!
-
-  """Subscriber Has a Scam Block on the line, this value will be set to true else false"""
-  scamBlockInd: Boolean
-  """Subscriber has Insurance Soc active"""
-  protection360Enabled: Boolean
-  """
-  Reason code for statusChangeReason
-  Depends on subscriber status.
-  """
-  statusChangeReason: String
-  """Date when the subscriber was suspended."""
-  suspensionDate: String
-  """If any error provide this value"""
-  reasonCode: String
-  """Phone numbers paired to the subscriber's, if any"""
-  pairedPhoneNumbers: [String]
 }
 
 interface Error {

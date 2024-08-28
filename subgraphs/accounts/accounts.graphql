@@ -7,11 +7,9 @@ type Query {
   account(billingAccountNumber: String!): Account
 }
 
-type Account @key(fields: "billingAccountNumber") {
+type Account @shareable @key(fields: "billingAccountNumber") {
   """billingAccountNumber or ban or accountNumber"""
-  billingAccountNumber: ID! @shareable
-
-  """phoneNumber """
+  billingAccountNumber: ID!
   phoneNumber: ID!
   """
   Uprising Role Assigned at Subscriber/Line Level -

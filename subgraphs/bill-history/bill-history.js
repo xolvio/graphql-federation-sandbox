@@ -21,11 +21,11 @@ const billHistory = [
 ];
 
 const subscribers = [
-    {
+    {__typename: "Subscriber",
         phoneNumber: "123",
-        firstName: "Loop",
-        lastName: "test",
-        status: "ACTIVE"
+      nickName: "testNick",
+      firstName: "FirstI",
+      lastName: "Doe",
     }
 ]
 
@@ -34,7 +34,10 @@ const typeDefs = gql(readFileSync('./bill-history.graphql', { encoding: 'utf-8' 
 const resolvers = {
     Query: {
         subscriberByPhoneNumber: async (_, args, context) => {
-            return subscribers.find(sub => args.billingAccountNumber === sub.phoneNumber);
+            console.log(args)
+            const resultData = subscribers.find(sub => args.phoneNumber === sub.phoneNumber);
+            console.log(resultData)
+            return resultData
         },
     },
     BillDetailResponse: {
