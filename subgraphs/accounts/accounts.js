@@ -67,6 +67,18 @@ const resolvers = {
             console.log("args",reference)
             return accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
         }
+    },
+    Subscriber: {
+        account: (args) => {
+            console.log("====2======================")
+            console.log(args)
+            return accounts.find(account => account.phoneNumber === args.phoneNumber);;
+        },
+        // __resolveReference: reference => {
+        //     console.log("=====")
+        //     console.log("args",reference)
+        //     return accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
+        // }
     }
 }
 const schema = buildSubgraphSchema({typeDefs, resolvers});

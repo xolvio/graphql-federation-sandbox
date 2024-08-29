@@ -10,17 +10,9 @@ type Query {
 
 union SubscriberResponse =  Subscriber | SubscriberError
 
-type Account @key(fields: "phoneNumber"){
-  phoneNumber: ID!
-}
-
 type Subscriber @key(fields: "phoneNumber") {
   """Subscriber Phone Number, often refered as MSISDN"""
   phoneNumber: ID!
-
-  """Account """
-
-    account(phoneNumber: ID): Account
 
   """Full Name flatten (first, middle and last name flatten)"""
   nickName: String
