@@ -10,10 +10,7 @@ type Query {
 
 union SubscriberResponse =  Subscriber | SubscriberError
 
-type Account @shareable @key(fields: "billingAccountNumber") @key(fields: "phoneNumber"){
-  """billingAccountNumber or ban or accountNumber"""
-  billingAccountNumber: ID!
-
+type Account @key(fields: "phoneNumber"){
   phoneNumber: ID!
 }
 

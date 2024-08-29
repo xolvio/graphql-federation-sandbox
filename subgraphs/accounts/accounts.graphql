@@ -7,7 +7,7 @@ type Query {
   account(billingAccountNumber: String!): Account
 }
 
-type Account @shareable @key(fields: "billingAccountNumber") {
+type Account @shareable @key(fields: "phoneNumber") {
   """billingAccountNumber or ban or accountNumber"""
   billingAccountNumber: ID!
   phoneNumber: ID!

@@ -16,7 +16,6 @@ if (process.env.APOLLO_OTEL_EXPORTER_TYPE) {
 const {ApolloServer, gql} = require('apollo-server');
 const {buildSubgraphSchema, printSubgraphSchema} = require('@apollo/subgraph');
 const {readFileSync} = require('fs');
-const {printSchema} = require('graphql');
 
 const port = process.env.APOLLO_PORT || 4000;
 
@@ -72,7 +71,13 @@ const resolvers = {
 }
 const schema = buildSubgraphSchema({typeDefs, resolvers});
 
-const server = new ApolloServer({schema: schema});
+const server = new ApolloServer({
+    schema,
+    context: async ({ req }) => {
+        console.log(req.body)
+    }
+});
+
 server.listen({port: port}).then(({url}) => {
     console.log(`🚀 Accounts subgraph ready at ${url}`);
 }).catch(err => {
