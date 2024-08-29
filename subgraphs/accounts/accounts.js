@@ -50,17 +50,22 @@ const typeDefs = gql(readFileSync('./accounts.graphql', {encoding: 'utf-8'}));
 const resolvers = {
     Query: {
         accounts: (_, args, context) => {
+            console.log("Query ==========================")
             return accounts;
         },
         account: (_, args, context) => {
+            console.log("Query account ==========================")
             return accounts.find(account => account.billingAccountNumber === args.billingAccountNumber);
         }
     },
     Account: {
         account: (account) => {
+            console.log("==========================")
             return account[0];
         },
         __resolveReference: reference => {
+            console.log("=====")
+            console.log("args",reference)
             return accounts.find(account => account.billingAccountNumber === reference.billingAccountNumber)
         }
     }

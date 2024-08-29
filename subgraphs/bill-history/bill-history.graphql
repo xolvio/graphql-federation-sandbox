@@ -15,24 +15,6 @@ type Account @shareable @key(fields: "billingAccountNumber") @key(fields: "phone
   billingAccountNumber: ID!
 
   phoneNumber: ID!
-  """
-  Uprising Role Assigned at Subscriber/Line Level -
-  Ex: AO, AM.
-  MOCKED
-  """
-  role: String
-  """
-  IAM Role will be provided Subscriber/Line Level
-  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
-  MOCKED
-  """
-  userRole: String
-  """
-  Legacy System role value for Subscriber's associated with Account
-  Ex: PAH, FULL, Standard, Restricted, No Access
-  MOCKED
-  """
-  systemRole: String
 }
 
 type Subscriber @key(fields: "phoneNumber") {
