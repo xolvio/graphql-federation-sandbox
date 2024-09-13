@@ -59,7 +59,7 @@ const resolvers = {
     },
     Subscriber: {
         account: (args) => {
-            // console.log("Subscriber account args:", args)
+            console.log("Subscriber account args:", args)
             return accounts.find(account => account.phoneNumber === args.phoneNumber);;
         },
     }
@@ -70,7 +70,7 @@ const server = new ApolloServer({
     schema,
     context: async ({ req }) => {
         // this logs all the requests
-        // console.log(req.body)
+        console.log(req.body)
     }
 });
 

@@ -1,53 +1,802 @@
 extend schema
-@link(url: "https://specs.apollo.dev/federation/v2.1",
-  import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective", "@requires", "@external"])
+@link(url: "https://specs.apollo.dev/federation/v2.5",
+    import: ["@key", "@shareable", "@requiresScopes"]
+  )
+  
+directive @Pattern(regexp : String! =".*", message : String = "graphql.validation.Pattern.message") on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
+"""
+query operation to fetch Eligibility details.
+If billingAccountNumber is passed in the request for Add and Subscriber (MSISDN) in case of Upgrade.
+"""
 type Query {
-  accounts: [Account]
-  account(billingAccountNumber: String!): Account
+  transactionEligiblity(
+    """
+    Billing Account Number
+    """
+    billingAccountNumber: ID!
+
+    """Billing Account Number"""
+    phoneNumbers: [ID!]
+
+    """transaction/orderType"""
+    transactionType: TRANSACTIONTYPEENUM
+
+    """This will be the brand of customer like MKB - MockingBird,  TMO - Regular TMobile, MPC - Metro PCS, BST - BOOST, SPT - SPRINT,AWL - ASSURANCE"""
+    brandId: BRANDENUM
+  ): TransactionEligibilityResponse!
+
+  accountInfo(
+    """
+    Billing Account Number
+    """
+    billingAccountNumber: ID!
+
+    """Billing Account Number"""
+    phoneNumbers: [ID!]
+
+  ): AccountInfoResponse!
+
+
+  subscriberFinanceDetailsByImei(
+	 """
+    Billing Account Number
+    """
+    billingAccountNumber: ID!
+
+    """PhoneNumbers for each line Number"""
+    phoneNumbers: ID!
+
+    """IMEI Number"""
+    imei: ID!
+	): FinanceAgreementsResponse
+
+  accountFinanceDetails(
+	 """
+    Billing Account Number
+    """
+    billingAccountNumber: ID!
+
+    """PhoneNumbers for each line Number"""
+    phoneNumbers: [ID!]
+
+	): FinanceAgreementsResponse
+	
+  """standalone query to extract the enrolled Paperless Billing information"""
+  paperlessBilling(billingAccountNumber: ID @Pattern(regexp: "^[0-9]{9}$" message: "billingAccountNumber must be 9 digits")): PaperlessBillingResponse
+  """standalone query to extract the enrolled Paper Billing information"""
+  paperBilling(billingAccountNumber: ID @Pattern(regexp: "^[0-9]{9}$" message: "billingAccountNumber must be 9 digits")): PaperBillingResponse
+  """standalone query to extract all the Paper Eligibility information for all the accountType and accountSubType """
+  paperBillingEligibilityType(billingAccountNumber: ID @Pattern(regexp: "^[0-9]{9}$" message: "billingAccountNumber must be 9 digits")): PaperBillingEligibilityResponse
 }
 
-type Account @key(fields: "phoneNumber") {
-  """billingAccountNumber or ban or accountNumber"""
-  billingAccountNumber: ID!
-  phoneNumber: ID!
-  """
-  Uprising Role Assigned at Subscriber/Line Level -
-  Ex: AO, AM.
-  MOCKED
-  """
-  role: String
-  """
-  IAM Role will be provided Subscriber/Line Level
-  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
-  MOCKED
-  """
-  userRole: String
-  """
-  Legacy System role value for Subscriber's associated with Account
-  Ex: PAH, FULL, Standard, Restricted, No Access
-  MOCKED
-  """
-  systemRole: String
-}
-
-type AccountSettings {
-  paperless: Boolean
-}
-
-interface BillDetail {
-  billingAccountNumber: String!
-}
-
-type CurrentBillDetail implements BillDetail @key(fields: "billingAccountNumber") {
-  billingAccountNumber: String!
-  account: Account
+type Mutation {
+    "Enroll/Create Paperless Billing preference by email address or mobile number or both"
+    enrollPaperlessBilling(input: PaperlessBillingInput): PaperlessBillingResponse @requiresScopes(scopes: [["AO"], ["AM"]])
+    "update Paperless Billing preference by email address or mobile number or both"
+    updatePaperlessBilling(input: PaperlessBillingInput): PaperlessBillingResponse @requiresScopes(scopes: [["AO"], ["AM"]])
+    "enroll to paper billing"
+    enrollPaperBilling(billingAccountNumber: ID!,billType: PaperBillType!) : PaperBillingResponse @requiresScopes(scopes: [["AO"], ["AM"]])
+    "update to paper billing"
+    updatePaperBilling(billingAccountNumber: ID!,billType: PaperBillType!) : PaperBillingResponse @requiresScopes(scopes: [["AO"], ["AM"]])
 }
 
 type Subscriber @key(fields: "phoneNumber") {
   """Subscriber Phone Number, often refered as MSISDN"""
   phoneNumber: ID!
-  """Account """
 
-    account(phoneNumber: ID): Account
+  account(phoneNumber: ID): Account @shareable
+  """
+  An array of between 1 and unlimited financeAgreements objects. Returned in Case of Loan/Lease active on the subscriber.
+  """
+  financeAgreements: FinanceAgreementsResponse
+
+  subscriberTransactionEligibility(
+    billingAccountNumber: ID
+    phoneNumbers: [ID!]
+    transactionType: TRANSACTIONTYPEENUM
+    brandId: BRANDENUM
+  ): SubscriberTransactionEligibility
+}
+
+union FinanceAgreementsResponse = TFinanceAgreements| FinanceAgreementError
+
+type TFinanceAgreements {
+	financeAgreementsList: [FinanceAgreement]
+}
+
+type Account @key(fields: "billingAccountNumber") @key(fields: "phoneNumber") {
+  """billingAccountNumber or ban or accountNumber"""
+  billingAccountNumber: ID!
+  """phoneNumber """
+  phoneNumber: ID!
+  """account Type associated to the customer"""
+  accountType: String
+  """account Sub Type associated to the customer"""
+  accountSubType: String
+  """account Type associated to the customer Example: I-INDIVIDUAL"""
+  accountTypeDescription: String
+  """account Sub Type associated to the customer Example: R-REGULAR"""
+  accountSubTypeDescription: String
+  """
+    account tenure, Depends on account activation is older than the oldest line on the account
+    Start year for the account
+  """
+  customerTenureStartYear: String
+  """
+  account tenure, Depends on account activation is older than the oldest line on the account
+  No of Months count
+  """
+  customerTenureYearMonthsCount: String
+  """account tenure start date, Depends on account activation is older than the oldest line on the account"""
+  customerTenureStartDate: String
+    """customerTenure convert the months into ex 2 Years 5 Months """
+  customerTenure: String
+  """Start date or activation date"""
+  startDate: String
+  """Reason Code fof Start Date"""
+  reasonCode: String
+  """account Status"""
+  status: String
+  """total all subscribers in the account, irrespective of lineType or status"""
+  totalSubscriberCount: String
+  """Active subscriber on the account, irrespective of lineType and account status"""
+  subscriberActiveCount: String
+  """Reserved subscriber on the account, irrespective of lineType and account status"""
+  subscriberReservedCount: String
+  """Cancelled subscriber on the account, irrespective of lineType and account status"""
+  subscriberCancelledCount: String
+  """Suspended subscriber on the account, irrespective of lineType and account status"""
+  subscriberSuspendedCount: String
+  """total GSM Line on the account"""
+  subscriberGSMCount: String
+  """total Hint Line on the account"""
+  subscriberHSICount: String
+  """account address Details"""
+  address: [AccountAddress!]
+  """A collection of line limits detailing the available, in-use, and deposit-required lines for different services and line types."""
+  lineLimits: [LineLimit!]
+  """Details line limits specifically by account number, including used limits and the number of duplicate and virtual lines."""
+  lineLimitsByAccount: [LineLimitByAccount!]
+  """billingAccountNumber or ban or accountNumber"""
+  accountTransactionEligibility(
+    billingAccountNumber: ID
+    transactionType: TRANSACTIONTYPEENUM
+    brandId: BRANDENUM
+  ): AccountTransactionEligibility
+  """Credit Elgigibility for given Account"""
+  creditEligibility: CreditEligibility
+
+  billingMethod: String
+
+  "Account level employee account boolean indicator evaluated from account type & subtype"
+  employeeAccount: Boolean
+  
+  """Return true if customer is enrolled in paperless billing, false otherwise"""
+  hasPaperlessBillingEnrolled: Boolean
+  """Return customer registered email address or mobile number for Paperless Billing"""
+  paperlessBilling: PaperlessBillingResponse
+  """Paper Billing Eligibility type based on accountType and accountSubType for that BAN"""
+  paperBillingEligibilityType: PaperBillingEligibilityResponse
+  """Provide current enrollment of paper billing"""
+  paperBilling: PaperBillingResponse
+}
+
+"""Paper Billing Eligibility type based on accountType and accountSubType for that BAN"""
+type PaperBillingEligibility{
+    paperBillingEligibilityType: [PaperBillingEligibilityType]
+}
+ 
+"""Either it return the PaperlessBilling or PaperlessBillingError"""
+union PaperlessBillingResponse= PaperlessBilling | PaperlessBillingError
+"""Either it return the PaperBillingEligibility or PaperBillingEligibilityError"""
+union PaperBillingEligibilityResponse= PaperBillingEligibility | PaperBillingError
+
+"""
+TransactionEligibilityResponse is an Union of Eligibility tied to the customer along with Error.
+"""
+union TransactionEligibilityResponse = Account | AccountError
+
+"""
+Account Details is an Union of Eligibility tied to the customer along with Error.
+"""
+union AccountInfoResponse = Account | AccountError
+
+"""Either it return the PaperBilling or PaperBillingError"""
+union PaperBillingResponse= PaperBilling | PaperBillingError
+
+"""
+Customer Eligiblity Response based on rules
+"""
+type AccountTransactionEligibility {
+  """Billing Account Number"""
+  billingAccountNumber: ID!
+  """
+  CRP KEY
+  """
+  crpKey: String
+  """
+  Eligibilty based on input transaction type at account level.
+  """
+  eligibilityInd: Boolean!
+  """
+  transaction/orderType
+  """
+  transactionType: TRANSACTIONTYPEENUM
+
+  """
+  reason code for  ineligibility
+  """
+  accountInEligibilityReason: String
+}
+
+"""
+  Below type is populated basing on the billing account number.
+"""
+type CreditEligibility{
+
+  """
+  Available Equipments Credit for the Account
+  """
+  availableEquipmentCredit: Float
+
+  """
+  Max Potential Credit for Equipment
+  """
+  maxPotentialEquipmentCredit: String
+
+  """
+  Contribution Amount for Line at account level
+  """
+  lineContributionAmount: Float
+
+  """
+  Balance amount on the equipment credit
+  """
+  equipmentCreditBalance: Float
+
+  """
+  Equipment Credit limit currently
+  """
+  currentEquipmentCreditLimit: Float
+
+  """
+  ReasonCode for credit ineligibility for financing
+  """
+  creditInEligibilityReasonCode: String
+
+  """
+  Reason for credit ineligibility for financing
+  """
+  creditInEligibilityReason: String
+
+  """
+  Double ECL indicator
+  """
+  doubleEclIndicator: Boolean
+
+  """
+  Eligible indicator for account
+  """
+  eligibleIndicator: Boolean
+
+}
+
+type SubscriberTransactionEligibility {
+  """
+  Phone Number for the subscriber
+  """
+  phoneNumber: String!
+
+  """
+  line Type associated with the subscriber G - GSM, H - HINT, IOT - Watches,ect..,
+  """
+  lineType: PRODUCTTYPEENUM
+
+  """
+  Eligibilty based on input transaction type at subscriber level.
+  """
+  eligibilityInd: Boolean!
+
+  """
+  reason code for  ineligibility
+  """
+  subscriberInEligibilityReason: String
+
+  """
+  Purchase Method applicable for subscirber/msisdn returned when brand is TMO
+  This value will be computed based on subsribers eigibilityInd.
+  """
+  availablePurchaseOptions: [PURCHASEOPTIONENUM]
+
+  """
+  Is subscriber/msisdn having active lease returned when brand is TMO
+  """
+  activeLeaseInd: Boolean
+
+  """
+  Is subscriber/msisdn having active Loan returned when brand is TMO
+  """
+  activeLoanInd: Boolean
+
+  """
+  Total remaining Fiance Amount for all active Loan associated with the subscriber.
+  """
+  totalRemainingLoanFinancedAmount: Float
+
+  """
+  Jump  program code returned when brand is TMO
+  """
+  jumpProgramCode: JUMPTYPEENUM
+}
+
+type FinanceAgreement {
+  """
+  Unique Identifier for the transaction where customer agrees to the Loan/Lease.
+  """
+  agreementNumber: String
+  """
+  Custom attribute - Minimum first installment amount to be paid
+  """
+  firstInstallmentAmount: Float
+
+  """
+  Total Financed Amount
+  """
+  totalFinancedAmount: Float
+
+  """
+  Total number of equipments under the agreement.
+  """
+  equipmentCount: Int
+  """
+  An array of between 0 and unlimited equipments objects.
+  """
+  equipmentFinance: [EquipmentFinance]
+}
+
+type EquipmentFinance {
+  """
+  equipment identifier
+  """
+  equipmentFinanceId: ID!
+  """
+  Last installment amount
+  """
+  lastInstallmentAmount: Float
+  """
+  Total number of installment payments
+  """
+  totalNumberOfInstallments: Int
+  """
+  Remaining number of installments
+  """
+  remainingNumberOfInstallments: Int
+  """
+  Type of transaction, e.g. Activation, Add A Line, Upgrade etc.
+  """
+  transactionType: String
+  """
+  EIP attribute creationDate - Time it is created
+  """
+  createdTime: String
+  """
+  inance type. Max length - 4 chars
+  """
+  financeType: String
+  """
+  Down payment plan level - firstInstallment
+  """
+  downPaymentAmount: Float
+  """
+  Residual Amount - Example - LEOP equipment residual
+  """
+  residualAmount: Float
+  """
+  ECLMP - Recurring installment payment amount
+  """
+  recurringInstallmentAmount: Float
+  """
+  Initial ECLB - The amount of equipment financing for the account with all active loan/lease current balance amounts, plus any reserved loan/lease amounts. Also known as the ECLB
+  """
+  totalFinancedAmount: Float
+  """
+  Balance owed. (ECLB)
+  """
+  remainingFinancedAmount: Float
+  """
+  Equipment activation date for ship to channels
+  """
+  activationDate: String
+  """
+  Number of installments paid
+  """
+  numberOfPaidInstallments: Int
+
+  """
+  Equipment promotion details
+  """
+  promotions: [Promotion]
+}
+
+type Promotion {
+    """
+    The unique id of the promotion.
+    """
+    promotionCode: String!
+
+    """
+    Description
+    """
+    promotionDescription: String!
+
+    """
+    Custom attribute - Active Indicator.
+    """
+    activeIndicator: Boolean!
+
+    """
+    Promotion reason status
+    """
+    lastTransactionReason: String
+
+    """
+    Start date
+    """
+    enrollmentDate: String!
+
+    """
+    Expiration date
+    """
+    expirationDate: String
+
+    """
+    Custom attribute - initialPromoBalance
+    """
+    totalCreditAmount: Float!
+
+    """
+    EIP attribute initialDuration - Duration in number of days.
+    """
+    totalNumberOfCredits: Int!
+
+    """
+    unpaid equipment balance
+    """
+    remainingCreditAmount: Float!
+
+    """
+    Custom attribute - remainingDuration
+    """
+    remainingNumberOfCredits: Int!
+
+    """
+    Billed amount for the equipment
+    """
+    totalAmountCreditApplied: Float!
+
+    """
+    Custom attribute - billed duration
+    """
+    totalNumberOfCreditsApplied: Int!
+
+    """
+    Custom attribute - monthlyCredit
+    """
+    monthlyCreditAmount: Float!
+
+    """
+    Custom attribute - Equipment ID. Same as partnerLoanId.
+    """
+    partnerEquipmentId: String!
+
+    """
+    Description of the device variant of the make/model.
+    """
+    partnerSkuDescription: String!
+
+    """
+    Custom Element - Final month credit amount
+    """
+    finalCreditAmount: Float!
+}
+
+
+type AccountAddress implements IAddress {
+  """
+  Geographic address ID
+  """
+  addressId: ID
+  """
+  address status whether the address is validated.
+  """
+  addressStatus: String
+  """
+  AddressType MILITARY,POB,RURAL,STREET
+  """
+  addressType: ADDRESSTYPEENUM
+  """
+  AddressType E911,PPU,USER.BILLING
+  """
+  addressLinkType: ADDRESSLINKTYPE
+  """
+  To indicate the  Address Line1.
+  """
+  addressLine1: String
+  """
+  To indicate the Address Line2.
+  """
+  addressLine2: String
+  """
+  To indicate the city name.
+  """
+  city: String
+  """
+  To indicate the Country Code.
+  """
+  country: String
+  """
+  To indicate the state code.
+  """
+  state: String
+  """
+  To indicate the ZipCode.
+  """
+  zip: String
+}
+
+"""
+Describes the limits and usage for various types of service lines, such as voice or data, including details about deposits required for additional lines.
+"""
+type LineLimit {
+  """
+  The type of service, e.g., 'WIRELESS'.
+  """
+  serviceType: String
+  """
+  The type of line, e.g., 'VOICE' or 'DATA'.
+  """
+  lineType: String
+  """
+  The total number of lines available for this type.
+  """
+  totalNumberOfLinesAvailable: Int
+  """
+  The number of lines available with a deposit.
+  """
+  numberOfLinesAvailableWithDeposit: Int
+  """
+  The number of lines available without requiring a deposit.
+  """
+  numberOfLinesAvailableWithoutDeposit: Int
+  """
+  The current number of lines in use.
+  """
+  numberOfLinesInUse: Int
+  """
+  Detailed information about deposits required for certain ranges of lines.
+  """
+  depositInfo: [DepositInfo!]
+}
+
+"""
+Provides information on deposits required for activating lines within specified ranges.
+"""
+type DepositInfo {
+  """
+  The start of the line range for which the deposit amount applies.
+  """
+  lineRangeStart: Int
+  """
+  The end of the line range for which the deposit amount applies.
+  """
+  lineRangeEnd: Int
+  """
+  The amount of deposit required for the specified line range.
+  """
+  depositAmount: Float
+}
+
+"""
+Details the usage and limits of lines under a specific account, including the number of duplicate and virtual lines.
+"""
+type LineLimitByAccount {
+  """
+  The account number to which these line limits apply.
+  """
+  accountNumber: String
+  """
+  A collection of used limits for different types of lines under this account.
+  """
+  usedLimits: [UsedLimit!]
+  """
+  The number of duplicate lines associated with the account.
+  """
+  noOfDuplicateLines: Int
+  """
+  The number of virtual lines associated with the account.
+  """
+  noOfVirtualLines: Int
+}
+
+"""
+Details the number of lines in use for a specific line type under an account.
+"""
+type UsedLimit {
+  """
+  The type of line, e.g., 'VOICE'.
+  """
+  lineType: String
+  """
+  The number of lines of this type currently in use.
+  """
+  numberOfLinesInUse: Int
+  """
+  The service type, typically 'WIRELESS'.
+  """
+  serviceType: String
+}
+
+enum PRODUCTTYPEENUM {
+  GSM_G
+  PAGER_P
+  CELLULAR_C
+  WIFI_W
+  HINT_H
+  DATA_BRICK_B
+  IOT_I
+}
+
+enum PURCHASEOPTIONENUM {
+  FRP
+  LOAN
+  LEASE
+  POIP
+  SUBSIDY
+  NONE
+}
+
+enum JUMPTYPEENUM {
+  JUMP1
+  JUMP2
+  EUC
+  YU1
+}
+
+enum BRANDENUM {
+  TMO
+}
+
+enum TRANSACTIONTYPEENUM {
+  UPGRADE
+  AAL
+  UPG_AAL
+}
+
+enum ADDRESSLINKTYPE {
+  E911
+  PPU
+  USER
+  BILLING
+}
+
+enum ADDRESSTYPEENUM {
+  MILITARY
+  POB
+  RURAL
+  STREET
+}
+
+interface IAddress {
+  """
+  To indicate the  Address Line1.
+  """
+  addressLine1: String
+  """
+  To indicate the Address Line2.
+  """
+  addressLine2: String
+  """
+  To indicate the city name.
+  """
+  city: String
+  """
+  To indicate the Country Code.
+  """
+  country: String
+  """
+  To indicate the state code.
+  """
+  state: String
+  """
+  To indicate the ZipCode.
+  """
+  zip: String
+}
+
+"""Paper Billing Eligiblity type based on accountType and accountSubType for that Billing Account Number"""
+type PaperBillingEligibilityType {
+  """Recurring charge configured based on accountType and accountSubType"""
+  recurringCharge : String
+  """Eligible type"""
+  eligibleBillType: PaperBillType
+}
+"""This will provide the information about the Paperless Billing enrolled for email or sms or both"""
+type PaperlessBilling {
+   """Customer Preference Mobile Number""" mobileNumber : String
+   """Customer Preference Email Address""" emailAddress: String
+   """Customer Preference Delivery Method""" deliveryMethod: DELIVERY_METHOD
+}
+ 
+"""This will provide the information about the paper billing information about the recurring charge and current bill type"""
+type PaperBilling{
+  """recurring charge that are charged every month for the customer based on paper bill type"""
+  recurringCharge : String
+  """paper bill type that was chosen"""
+  currentBillType: PaperBillType
+}
+ 
+"""list of bill type that support for the paper billing. SUMMARY_BILL - 0$ recurring charge, DETAILED_BILL - there will be recurring charge based on accountType and accountSubType, FREE_DETAILED_BILL - $0 recurring charge """
+enum PaperBillType{
+  SUMMARY_BILL
+  DETAILED_BILL
+  FREE_DETAILED_BILL
+}
+ 
+"""Paperless Billing input"""
+input PaperlessBillingInput {
+  """Samson Billing Account Number""" billingAccountNumber: ID! @Pattern(regexp : "^[0-9]{9}$", message: "billingAccountNumber must be 9 digits")
+  """Customer Preference Mobile Number""" mobileNumber: String @Pattern(regexp : "^[0-9]{10}$", message : "mobileNumber must be 10 digits")
+  """Customer Preference Email Address""" emailAddress: String @Pattern(regexp : "^.{0,320}$", message : "emailAddress must not exceed 320 characters")
+  """Customer Preference Delivery Method"""
+  deliveryMethod : DELIVERY_METHOD
+}
+
+
+"""delivery method for Paperless Billing preferences - email or sms or both """
+enum DELIVERY_METHOD{
+    EMAIL
+    SMS
+    BOTH
+    OTHERS
+}
+ 
+"""Paperless Billing Error"""
+type PaperlessBillingError implements Error {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+type AccountError implements Error @shareable {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+type FinanceAgreementError implements Error {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+"""Paper Billing Error"""
+type PaperBillingError implements Error {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+"""
+Used when an API throws an Error, typically with a HTTP error response-code
+"""
+interface Error {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
 }

@@ -6,11 +6,12 @@ const { printSchema } = require('graphql');
 const port = process.env.APOLLO_PORT || 4000;
 
 const subscribers = [
-    {__typename: "Subscriber",
+    {
+        __typename: "Subscriber",
         phoneNumber: "123",
-      nickName: "testNick",
-      firstName: "FirstI",
-      lastName: "Doe",
+        nickName: "testNick",
+        firstName: "FirstI",
+        lastName: "Doe",
     }
 ]
 
@@ -27,7 +28,12 @@ const resolvers = {
 
 const schema = buildSubgraphSchema({ typeDefs, resolvers });
 
-const server = new ApolloServer({ schema });
+const server = new ApolloServer({
+    schema, context: async ({ req }) => {
+        // this logs all the requests
+        console.log(JSON.stringify(req.body))
+    }
+});
 server.listen({ port }).then(({ url }) => {
     console.log(`🚀 Bill History subgraph ready at ${url}`);
 }).catch(err => {

@@ -1,26 +1,551 @@
 extend schema
-@link(url: "https://specs.apollo.dev/federation/v2.1",
-  import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective", "@requires", "@external"])
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.5"
+    import: ["@key", "@external", "@shareable", "@extends","@requiresScopes"]
+  )
+
+directive @Pattern(
+  regexp: String! = ".*"
+  message: String = "graphql.validation.Pattern.message"
+) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
 type Query {
+  subscribers(
+    billingAccountNumber: ID!
+      @Pattern(
+        regexp: "^[0-9]{9}$"
+        message: "billingAccountNumber must be 9 digits"
+      )
+    phoneNumbers: [ID!]
+  ): AccountSubscribersResponse
+
+  """
+  Query supports  phoneNumber as input and provides data returns
+    only subset data but not all the subscriber data in phase1
+  """
   subscriberByPhoneNumber(
     phoneNumber: ID!
   ): SubscriberResponse
+
+  equipment(
+    imei: ID!
+      @Pattern(regexp: "^[0-15]{15}$", message: "imei number must be 15 digits")
+  ): EquipmentResponse
+
+  subscriberProducts(
+    billingAccountNumber: ID!
+      @Pattern(
+        regexp: "^[0-9]{9}$"
+        message: "billingAccountNumber must be 9 digits"
+      )
+      phoneNumbers: [ID!]
+  ): ProductsResponse
+
+
 }
+
+union AccountSubscribersResponse = Account | AccountError
+
+union EquipmentResponse = Equipment | EquipmentError
+
+union ProductsResponse = TProducts | ProductError
 
 union SubscriberResponse =  Subscriber | SubscriberError
 
-type Subscriber @key(fields: "phoneNumber") {
+
+type Account @key(fields: "billingAccountNumber") @key(fields: "phoneNumber"){
+  """billingAccountNumber or ban or accountNumber"""
+  billingAccountNumber: ID!
+
+  """phoneNumber """
+  phoneNumber: ID!
+  """
+  Uprising Role Assigned at Subscriber/Line Level -
+  Ex: AO, AM.
+  MOCKED
+  """
+  role: String
+  """
+  IAM Role will be provided Subscriber/Line Level
+  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
+  MOCKED
+  """
+  userRole: String
+  """
+  Legacy System role value for Subscriber's associated with Account
+  Ex: PAH, FULL, Standard, Restricted, No Access
+  MOCKED
+  """
+  systemRole: String
+  """
+  Subscribers for the given input Ban
+  """
+  subscribers(billingAccountNumber: ID, phoneNumbers: [ID!]): [Subscriber!]
+
+  """Account Fraud block Details"""
+  accountFraudBlocks: [AccountFraudBlock!]
+
+  """Authorized User for the given Account"""
+  authorizedUser: [AuthorizedUser]
+
+}
+
+
+type Subscriber @key(fields: "phoneNumber") { 
   """Subscriber Phone Number, often refered as MSISDN"""
   phoneNumber: ID!
 
+  """Subscriber is a default line, if the account has multiple subscriber
+    MOCKED to false
+  """
+  defaultLine: Boolean
+  """
+  Uprising Role Assigned at Subscriber/Line Level -
+  Ex: AO, AM.
+  MOCKED
+  """
+  role: String
+  """
+  IAM Role will be provided Subscriber/Line Level
+  Ex: PAH,SL,NPAH_P, NPAH_NP, NPAH_R,
+  MOCKED
+  """
+  userRole: String
+  """
+  The profile that this user can request or be granted a role
+  """
+  userId: String
+  """
+  RegistrationStatus from IAM
+  """
+  registrationStatus: REGISTRATIONSTATUSENUM
+  """
+  Legacy System role value for Subscriber's associated with Account
+  Ex: PAH, FULL, Standard, Restricted, No Access
+  MOCKED
+  """
+  systemRole: String
   """Full Name flatten (first, middle and last name flatten)"""
   nickName: String
   """First name of the individual"""
   firstName: String!
   """Family name of the individual. Contains the non-chosen or inherited name. Also known as last name in the Western context"""
   lastName: String!
+  """ Email Address """
+  emailAddress: String
+  """Status of the Subscriber active/suspended"""
+  status: String!
+  """Date when the product is set to active"""
+  activationDate: String!
+  """Subscriber Product"""
+  lineType: PRODUCTTYPEENUM
+  """Subscriber Has a Scam Block on the line, this value will be set to true else false"""
+  scamBlockInd: Boolean
+  """Subscriber has Insurance Soc active"""
+  protection360Enabled: Boolean
+  """Subscriber equipment details"""
+  equipment(imei: String): [Equipment!]
+  """
+  Reason code for statusChangeReason
+  Depends on subscriber status.
+  """
+  statusChangeReason: String
+  """Date when the subscriber was suspended."""
+  suspensionDate: String
+  """Products which are related for subscriber account"""
+  products(billingAccountNumber: ID, phoneNumbers: [ID!]): ProductsResponse @shareable
+  """Subscriber address Details"""
+  address: [SubscriberAddress!]
+  """If any error provide this value"""
+  reasonCode: String
+  """Subscriber Fraud block Details"""
+  subscriberFraudBlocks: [SubscriberFraudBlock!]
+  """Phone numbers paired to the subscriber's, if any"""
+  pairedPhoneNumbers: [String]
 }
+
+
+type AddOns implements IProductCharacterstics{
+  """The service level. Valid values - PRODUCT / ACCOUNT / SUBSCRIBER"""
+  productLevel: SERVICELEVELENUM
+  """The service type - price plan ,AddOn or Optional. Valid values - P - RATE_PLAN / R - REGULAR (Add-on) / O - OPTIONAL / B - BUYONEGETONE / M - REDUCED-PRICE-PLAN / U - REGULAR-OFFER / S - REDUCED-SOC / T - TAX-FEE"""
+  productType: SERVICETYPEENUM
+  """Service Code"""
+  productCode: String
+  """The mobile number (MSISDN) associated with the line of service."""
+  phoneNumber: ID
+  """Soc Seq No"""
+  agreementId: String
+  """Service Description"""
+  productDescription: String
+  """Service Group"""
+  productGroup: String
+  """Recurring charge."""
+  recurringCharge: String
+  """The date when the service agreement became active."""
+  productEffectiveDate: String
+  """The date on which the service expires"""
+  productExpirationDate: String
+  """Valid values: True / False. Indicates if the service is future dated means become effective on a futer date. In case it is future dates, the property will be set to true and will not be calculated within the totals"""
+  futureDatedService: Boolean
+  """relatedService"""
+  relatedService: String
+  """relatedServiceId"""
+  relatedServiceId: String
+  """True / False. Indicates if the service is included within the rate plan"""
+  planInclusive: Boolean
+  """Product Type."""
+  lineType: PRODUCTTYPEENUM
+  """Feature code."""
+  featureCode: String
+  """Indicates if Tax applies on the service charges or not. In case the service will have the tax define as TI in the DB the value will be set to TAX_INCLUSIVE else buy default it will be set to TAX_EXCLUSIVE"""
+  taxType: TAXTYPENUM
+}
+
+type TProduct {
+  """Feature code."""
+  ratePlans: [RatePlan]
+    """Feature code."""
+  addOnProduct: [AddOns]
+}
+
+"""The below if for subscriber level products which provides list of products"""
+type TProducts {
+   """List of products"""
+  products: [TProduct]
+}
+
+type RatePlan implements IProductCharacterstics {
+
+  """The service level. Valid values - PRODUCT / ACCOUNT / SUBSCRIBER"""
+  productLevel: SERVICELEVELENUM
+  """The service type - price plan ,AddOn or Optional. Valid values - P - RATE_PLAN / R - REGULAR (Add-on) / O - OPTIONAL / B - BUYONEGETONE / M - REDUCED-PRICE-PLAN / U - REGULAR-OFFER / S - REDUCED-SOC / T - TAX-FEE"""
+  productType: SERVICETYPEENUM
+  """Service Code"""
+  productCode: String
+  """The mobile number (MSISDN) associated with the line of service."""
+  phoneNumber: ID
+  """Soc Seq No"""
+  agreementId: String
+  """Service Description"""
+  productDescription: String
+  """Service Group"""
+  productGroup: String
+  """Recurring charge."""
+  recurringCharge: String
+  """The date when the service agreement became active."""
+  productEffectiveDate: String
+  """The date on which the service expires"""
+  productExpirationDate: String
+  """Valid values: True / False. Indicates if the service is future dated means become effective on a futer date. In case it is future dates, the property will be set to true and will not be calculated within the totals"""
+  futureDatedService: Boolean
+  """True / False. Indicates if the service is included within the rate plan"""
+  planInclusive: Boolean
+  """Product Type."""
+  lineType: PRODUCTTYPEENUM
+  """related Product"""
+  relatedProduct: [AddOns]
+  """Feature code."""
+  featureCode: String
+  """Indicates if Tax applies on the service charges or not. In case the service will have the tax define as TI in the DB the value will be set to TAX_INCLUSIVE else buy default it will be set to TAX_EXCLUSIVE"""
+  taxType: TAXTYPENUM
+}
+
+
+type Equipment @key(fields: "imei") {
+  """The International Mobile Equipment Identity of the device"""
+  imei: ID!
+  """The make of the device, e.g. 'Apple' or 'Samsung'"""
+  make: String!
+  """Simplified or commonly used name for the device e.g. 'IPHONE 11'"""
+  model: String!
+  """Simplified or commonly used name for the device"""
+  marketingName: String!
+  """Memory of device"""
+  memory: String
+  """color of device"""
+  color: String
+  """carrier of device"""
+  carrier: String
+  """category of the device"""
+  deviceType: String
+  """operatingSystem of the device"""
+  operatingSystem: OperatingSystem
+  """The relative path of the device image"""
+  images: [Image]
+}
+
+  """operatingSystem of the device"""
+
+type OperatingSystem {
+  """The Name of the Operting System"""
+  name: String
+    """Version of the operating System"""
+  version: String
+}
+
+type Image {
+  """Categorization of the image, based on the size, resolution etc"""
+  imageType: String
+  """The URL where the image is stored"""
+  imageUrl: String
+  """The value that should be used for the HTML element that specifies the alt text for the image of this item"""
+  altText: String
+  """An array of thumbnails objects.An image that is a miniature representation of a product"""
+  thumbnails: [Thumbnail]
+}
+
+type Thumbnail {
+  """Categorization of the image, based on the size, resolution etc"""
+  imageType: String
+  """The URL where the image is stored"""
+  imageUrl: String
+  """The value that should be used for the HTML element that specifies the alt text for the image of this item"""
+  altText: String
+}
+
+interface IAddress {
+  """
+  To indicate the  Address Line1.
+  """
+  addressLine1: String
+  """
+  To indicate the Address Line2.
+  """
+  addressLine2: String
+  """
+  To indicate the city name.
+  """
+  city: String
+  """
+  To indicate the Country Code.
+  """
+  country: String
+  """
+  To indicate the state code.
+  """
+  state: String
+  """
+  To indicate the ZipCode.
+  """
+  zip: String
+}
+
+interface IProductCharacterstics {
+
+  """The service level. Valid values - PRODUCT / ACCOUNT / SUBSCRIBER"""
+  productLevel: SERVICELEVELENUM
+  """The service type - price plan ,AddOn or Optional. Valid values - P - RATE_PLAN / R - REGULAR (Add-on) / O - OPTIONAL / B - BUYONEGETONE / M - REDUCED-PRICE-PLAN / U - REGULAR-OFFER / S - REDUCED-SOC / T - TAX-FEE"""
+  productType: SERVICETYPEENUM
+  """Service Code"""
+  productCode: String
+  """The mobile number (MSISDN) associated with the line of service."""
+  phoneNumber: ID
+  """Soc Seq No"""
+  agreementId: String
+  """Service Description"""
+  productDescription: String
+  """Service Group"""
+  productGroup: String
+  """Recurring charge."""
+  recurringCharge: String
+  """The date when the service agreement became active."""
+  productEffectiveDate: String
+  """The date on which the service expires"""
+  productExpirationDate: String
+  """Valid values: True / False. Indicates if the service is future dated means become effective on a futer date. In case it is future dates, the property will be set to true and will not be calculated within the totals"""
+  futureDatedService: Boolean
+  """True / False. Indicates if the service is included within the rate plan"""
+  planInclusive: Boolean
+  """Product Type."""
+  lineType: PRODUCTTYPEENUM
+  """Feature code."""
+  featureCode: String
+  """Indicates if Tax applies on the service charges or not. In case the service will have the tax define as TI in the DB the value will be set to TAX_INCLUSIVE else buy default it will be set to TAX_EXCLUSIVE"""
+  taxType: TAXTYPENUM
+}
+
+type SubscriberAddress implements IAddress {
+  """
+  Geographic address ID
+  """
+  addressId: ID
+  """
+  address status whether the address is validated.
+  """
+  addressStatus: String
+  """
+  AddressType MILITARY,POB,RURAL,STREET
+  """
+  addressType: ADDRESSTYPEENUM
+  """
+  AddressType E911,PPU,USER.BILLING
+  """
+  addressLinkType: ADDRESSLINKTYPE
+  """
+  To indicate the  Address Line1.
+  """
+  addressLine1: String
+  """
+  To indicate the Address Line2.
+  """
+  addressLine2: String
+  """
+  To indicate the city name.
+  """
+  city: String
+  """
+  To indicate the Country Code.
+  """
+  country: String
+  """
+  To indicate the state code.
+  """
+  state: String
+  """
+  To indicate the ZipCode.
+  """
+  zip: String
+}
+
+enum ADDRESSTYPEENUM {
+  MILITARY
+  POB
+  RURAL
+  STREET
+}
+
+enum TAXTYPENUM {
+  TAX_EXCLUSIVE
+  TAX_INCLUSIVE
+}
+
+enum SERVICETYPEENUM {
+  OPTIONAL
+  RATE_PLAN
+  REGULAR
+  BUYONEGETONE
+  REDUCED_PRICE_PLAN
+  REGULAR_OFFER
+  REDUCED_SOC
+  TAX_FEE
+}
+
+enum SERVICELEVELENUM {
+  PRODUCT
+  ACCOUNT
+  SUBSCRIBER
+}
+
+enum PRODUCTTYPEENUM {
+    GSM_G
+    PAGER_P
+    CELLULAR_C
+    WIFI_W
+    HINT_H
+    DATA_BRICK_B
+    IOT_I
+}
+
+enum ADDRESSLINKTYPE {
+  E911
+  PPU
+  USER
+  BILLING
+}
+
+enum BLOCKTYPEENUM {
+  SIMSWAP
+  RETAILBLOCK
+  PORTOUT
+  FRAUDFLAG_SIMSWAP
+}
+
+enum CONTACTTYPEENUM {
+  B_BILLING
+  U_USER
+  C_CONTACT
+  A_FIRSTAUTHUSER
+  S_SECONDAUTHUSER
+  Y_PPU
+}
+
+enum REGISTRATIONSTATUSENUM {
+  N
+  P
+  F
+}
+
+type AccountFraudBlock implements IFraudBlock {
+  """
+  Type or Name of the block (e.g. simSwap, retailBlock, portOut etc.). FRAUDFLAG_SIMSWAP returned for simSwap set by T-Mobile fraud Management Team.
+  Currently supports only SimSwap block at subscriber level, this will be returned if there is block at billing System.
+  This will be returned only at subscriber level and will not be returned at account level.FRAUDFLAG_SIMSWAP will not be supported at the set block request to set and unset the block
+  """
+  blockType: BLOCKTYPEENUM
+  """
+  The value set for the block type. This will be a boolean value
+  """
+  blockValue: Boolean
+}
+
+type SubscriberFraudBlock implements IFraudBlock {
+  """
+  Type or Name of the block (e.g. simSwap, retailBlock, portOut etc.). FRAUDFLAG_SIMSWAP returned for simSwap set by T-Mobile fraud Management Team.
+  Currently supports only SimSwap block at subscriber level, this will be returned if there is block at billing System.
+  This will be returned only at subscriber level and will not be returned at account level.FRAUDFLAG_SIMSWAP will not be supported at the set block request to set and unset the block
+  """
+  blockType: BLOCKTYPEENUM
+  """
+  The value set for the block type. This will be a boolean value
+  """
+  blockValue: Boolean
+}
+
+"""
+List of fraud blocks set
+"""
+interface IFraudBlock {
+  """
+  Type or Name of the block (e.g. simSwap, retailBlock, portOut etc.). FRAUDFLAG_SIMSWAP returned for simSwap set by T-Mobile fraud Management Team.
+  Currently supports only SimSwap block at subscriber level, this will be returned if there is block at billing System.
+  This will be returned only at subscriber level and will not be returned at account level.FRAUDFLAG_SIMSWAP will not be supported at the set block request to set and unset the block
+  """
+  blockType: BLOCKTYPEENUM
+  """
+  The value set for the block type. This will be a boolean value
+  """
+  blockValue: Boolean
+}
+
+type AuthorizedUser {
+  """
+  First Name of AuthorizedUser from IAM
+  """
+  firstName: String!
+
+  """
+  last name of AuthorizedUser from IAM
+  """
+  lastName: String!
+
+  """
+  Middle name of AuthorizedUser from IAM
+  """
+  middleName: String
+
+  """
+  Phone Number of AuthorizedUser from IAM
+  """
+  phoneNumbers: [String]
+
+  """
+  Authorized User contactType
+  """
+  contactType: CONTACTTYPEENUM
+
+}
+
 
 interface Error {
   """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
@@ -29,7 +554,28 @@ interface Error {
   message: String!
 }
 
+type AccountError implements Error @shareable {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+type EquipmentError implements Error @shareable {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
 type SubscriberError implements Error @shareable {
+  """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
+  code: String!
+  """A human-readable message describing the error"""
+  message: String!
+}
+
+type ProductError implements Error @shareable {
   """A succinct, domain-specific human-readable text string or http-code to identify the type of error for the given status code"""
   code: String!
   """A human-readable message describing the error"""
